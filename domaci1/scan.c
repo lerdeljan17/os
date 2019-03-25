@@ -12,6 +12,9 @@ static char ctrl_map[16][66];
 static int CTRL = 0;
 static int ALT = 0;
 static int SHIFT = 0;
+static int len1,len2;
+static char *buff;
+static char s[10];
 
 static int code;
 /*
@@ -30,9 +33,10 @@ int find(){
 void load_config(const char *scancodes_filename, const char *mnemonic_filename)
 {	
 	char tmp[10];
-	int len1,len2,n, i;
+	int n, i;
 	int sct = open(scancodes_filename, O_RDONLY);
 	len1 = fgets(mala_slova, MAX, sct);
+	len1--;
 	len2 = fgets(velika_slova, MAX, sct);
 	close(sct);
 	int cm = open(mnemonic_filename, O_RDONLY);
@@ -41,16 +45,7 @@ void load_config(const char *scancodes_filename, const char *mnemonic_filename)
 	for(i=0;i<n;i++){
 		fgets(ctrl_map[i], MAX, cm);
 		print(ctrl_map[i]);
-	}/*
-	for(i=0;i<len1;i++){
-		//write(1,&mala_slova[i],1);
-		print(&mala_slova[i]);
 	}
-	write(1,"\n",1);
-	for(i=0;i<len2;i++){
-		//write(1,&velika_slova[i],1);
-		print(velika_slova + i);
-	}*/
 	print(mala_slova);
 	print("\n");
 	print(velika_slova);
@@ -60,29 +55,70 @@ void load_config(const char *scancodes_filename, const char *mnemonic_filename)
 int process_scancode(int scancode, char *buffer)
 {
 	int result;
-	code = scancode;
 	/*
 		Your code goes here!
 		Remember, only inline assembly.
 		Good luck!
 	*/
 	__asm__ __volatile__ (
-		"movl (code),%eax;"
-		"cmpl $200, %eax;"
-		"je SHIFTL;"
-		"cmpl $201, %eax;"
-		"je CTRLL;"
-		"cmpl $202 , %eax;"
-		"je ALTL;"
-		"SHIFTL:;"
+		"xorl %%ebx,%%ebx;"
+		"cmpl $200, %%edx;"
+		"je SHIFT1;"
+		"cmpl $201, %%edx;"
+		"je CTRL1;"
+		"cmpl $202 , %%edx;"
+		"je ALTL1;"
+		"cmpl $300, %%edx;"
+		"je SHIFT0;"
+		"cmpl $301, %%edx;"
+		"je CTRL0;"
+		"cmpl $302 , %%edx;"
+		"je ALTL0;"
+		"jmp END;"
+		"SHIFT1:;"
 		"movl $1, (SHIFT);"
 		"jmp END;"
-		"CTRLL:;"
+		"CTRL1:;"
 		"movl $1,(CTRL);"
 		"jmp END;"
-		"ALTL:;"
+		"ALTL1:;"
 		"movl $1,(ALT);"
+		"jmp END;"
+		"SHIFT0:;"
+		"movl $0, (SHIFT);"
+		"jmp END;"
+		"CTRL0:;"
+		"movl $0,(CTRL);"
+		"jmp END;"
+		"ALTL0:;"
+		"movl $0,(ALT);"
 		"END:;"
+		
+		"cmpl $50,%%edx;"
+		"jg KK;"
+		"cmpl $1, (SHIFT);"
+		"je VELIKA_SLOVAL;"
+		"cld;"
+		"leal mala_slova, %%esi;"
+		"decl %%edx;"
+		"addl %%edx,%%esi;"
+		"movsb;"
+		"incl %%ebx;"
+		"jmp KK;"
+		
+		"VELIKA_SLOVAL:;"
+		"cmpl $50,%%edx;"
+		"jg KK;"
+		"cld;"
+		"leal velika_slova, %%esi;"
+		"decl %%edx;"
+		"addl %%edx,%%esi;"
+		"movsb;"
+		"incl %%ebx;"
+
+		"KK:;"
+		:"=b"(result)
+		:"d"(scancode),"D" (buffer)
 
 	
 	);

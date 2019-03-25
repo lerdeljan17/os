@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 	//write(1,file_name,strlen(file_name));
 	file_name[strlen(file_name)-1]= 0;
 	//print(file_name);
-	pause();
+	//pause();
 	load_config("scancodes.tbl","ctrl.map");
 	/* ponavljamo: */
 		/* ucitavanje i otvaranje test fajla */
@@ -31,10 +31,14 @@ int main(int argc, char *argv[])
 		i = fgets(sc,MAX,file);
 		isc = atoi(sc);
 		print(sc);
+		pause();
 		if(isc == 400){
 			break;		
 		}
 		int l = process_scancode(isc, buff);
+		write(1,buff,1);
+		memset(buff, 0, l);
+		pause();
 	}
 	close(file);
 	_exit(0);

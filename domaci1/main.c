@@ -36,6 +36,8 @@ int main(int argc, char *argv[])
 			break;		
 		}
 		int l = process_scancode(isc, buff);
+		write(1,buff,l);
+		memset(buff, 0, l);
 		pause();
 	}
 	close(file);
