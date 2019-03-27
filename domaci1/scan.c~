@@ -9,12 +9,11 @@
 static char mala_slova[MAX];
 static char velika_slova[MAX];
 static char ctrl_map[16][66];
+static int ctrl_len[16];
 static int CTRL = 0;
 static int ALT = 0;
 static int SHIFT = 0;
-static int len1,len2;
-static char *buff;
-static char s[10];
+static int len1,len2,n;
 
 static int code;
 /*
@@ -33,7 +32,7 @@ int find(){
 void load_config(const char *scancodes_filename, const char *mnemonic_filename)
 {	
 	char tmp[10];
-	int n, i;
+	int i;
 	int sct = open(scancodes_filename, O_RDONLY);
 	len1 = fgets(mala_slova, MAX, sct);
 	len1--;
@@ -42,19 +41,15 @@ void load_config(const char *scancodes_filename, const char *mnemonic_filename)
 	int cm = open(mnemonic_filename, O_RDONLY);
 	n = fgets(tmp, 10, cm);
 	n = atoi(tmp);
+	int g;
+	char gs[10];
 	for(i=0;i<n;i++){
-		fgets(ctrl_map[i], MAX, cm);
+		g = fgets(ctrl_map[i], MAX, cm);
+		ctrl_len[i] = g-2;
+		itoa(ctrl_len[i],gs);
+		print(gs);
 		print(ctrl_map[i]);
-	}/*
-	for(i=0;i<len1;i++){
-		//write(1,&mala_slova[i],1);
-		print(&mala_slova[i]);
 	}
-	write(1,"\n",1);
-	for(i=0;i<len2;i++){
-		//write(1,&velika_slova[i],1);
-		print(velika_slova + i);
-	}*/
 	print(mala_slova);
 	print("\n");
 	print(velika_slova);
@@ -103,37 +98,99 @@ int process_scancode(int scancode, char *buffer)
 		"movl $0,(ALT);"
 		"END:;"
 		
-		"cmpl $50,%%edx;"
-		"jg KK;"
+		"cmpl $128,%%edx;"
+		"jg EN;"
 		"cmpl $1, (SHIFT);"
 		"je VELIKA_SLOVAL;"
 		"cld;"
 		"leal mala_slova, %%esi;"
-		"decl %%edx;"
+		//"decl %%edx;"
 		"addl %%edx,%%esi;"
 		"movsb;"
+		"decl %%edi;"
 		"incl %%ebx;"
 		"jmp KK;"
 		
 		"VELIKA_SLOVAL:;"
-		"cmpl $50,%%edx;"
-		"jg KK;"
+		//"cmpl $50,%%edx;"
+		//"jg KK;"
 		"cld;"
 		"leal velika_slova, %%esi;"
-		"decl %%edx;"
+		//"decl %%edx;"
 		"addl %%edx,%%esi;"
 		"movsb;"
+		"decl %%edi;"
 		"incl %%ebx;"
-
+		
 		"KK:;"
+		"cmpl $0, (CTRL);"
+		"je EN;"
+		"cld;"
+		//"leal ctrl_len,%%eax;"
+		"leal ctrl_map, %%esi;"
+		"movl (n),%%ecx;"
+		"CTRLL:;"
+		"cmpsb;"
+		"je NASO;"
+		"decl %%edi;"
+		"addl $65,%%esi;"
+		"incl %%eax;"
+		"loop CTRLL;"
+		"jne EN;"
+		"NASO:;"
+		
+		"addl $1,%%esi;"
+		"decl %%edi;"
+		
+		"xorl %%ebx,%%ebx;"
+		"xorl %%ecx,%%ecx;"
+		"movl $64,%%ecx;"
+		"movl %%esi,%%edx;"
+		"N:;"
+		"lodsb;"
+		"cmpb $0,%%al;"
+		"je POSLE;"
+		//"repe movsb;"
+		"incl %%ebx;"
+		"loop N;"
+		"POSLE:;"
+		"movl %%edx,%%esi;"
+		"movl %%ebx,%%ecx;"
+		"rep movsb;"
+		
+		/*"xorl %%ebx, %%ebx;"
+		"xorl %%ecx, %%ecx;"
+		"movl (%%eax), %%ecx;"
+		*/
+		
+		/*
+		"PREPISUJ:;"
+		"inc %%ebx;"
+		"movsb;"		
+		"loop PREPISUJ;"
+		*/
+		//"movl (%%eax)"
+		
+		
+		/*
+		"decl %%edi;"
+		"xorl %%ecx,%%ecx;"
+		"movl (%%eax),%%ecx;"
+		"movl (%%eax),%0;"
+		"rep movsb;"
+		*/
+		"EN:;"
+		
+
+		//"KK:;"
 		:"=b"(result)
 		:"d"(scancode),"D" (buffer)
 
 	
 	);
-	vardump(ALT);
+	/*vardump(ALT);
 	vardump(CTRL);
-	vardump(SHIFT);
+	vardump(SHIFT);*/
 
 	return result;
 }

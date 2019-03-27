@@ -5,13 +5,24 @@
 #include "scan.h"
 #define print(x) write(1, x, strlen(x));
 
+#define vardump(x) \
+{\
+	char buff[128];\
+	int len;\
+	len = itoa(x, buff);\
+	write(1, #x ": ", strlen(#x ": "));\
+	write(1, buff, len);\
+	write(1, "\n", 1);\
+}
+
+
 #define MAX 10
 
 int main(int argc, char *argv[])
 {
 	int len,isc;
 	char sc[MAX];
-	char buff[10];
+	char buff[66];
 	char file_name[100];
 	/* ucitavanje podesavanja */
 	write(1, "Unesite ime datoteke\n", strlen("Unesite ime datoteke\n"));
@@ -26,18 +37,24 @@ int main(int argc, char *argv[])
 		/* parsiranje fajla, obrada scanecodova, ispis */
 	int file = open(file_name, O_RDONLY);
 	int i;
+	char gd[10];
 	while(1){
 		
 		i = fgets(sc,MAX,file);
 		isc = atoi(sc);
-		print(sc);
-		pause();
+		//print(sc);
+		//pause();
 		if(isc == 400){
 			break;		
 		}
 		int l = process_scancode(isc, buff);
-		write(1,buff,1);
-		memset(buff, 0, l);
+		//itoa(l,gd);
+		//print("duzina buffra: ");
+		//print(gd);
+		//vardump(l);
+		//print("\n");
+		write(1,buff,l);
+		memset(buff, 0, 66);
 		pause();
 	}
 	close(file);
