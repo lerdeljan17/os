@@ -13,9 +13,7 @@ static int ctrl_len[16];
 static int CTRL = 0;
 static int ALT = 0;
 static int SHIFT = 0;
-static int len1,len2,n;
-
-static int code;
+static int len1,len2,n,ialt;
 /*
 	Deklaracije za nizove i tabele ovde
 	tabelu za prevodjenje scancodeova i tabelu
@@ -33,6 +31,7 @@ void load_config(const char *scancodes_filename, const char *mnemonic_filename)
 {	
 	char tmp[10];
 	int i;
+	ialt = 0;
 	int sct = open(scancodes_filename, O_RDONLY);
 	len1 = fgets(mala_slova, MAX, sct);
 	len1--;
@@ -87,6 +86,7 @@ int process_scancode(int scancode, char *buffer)
 		"jmp END;"
 		"ALTL1:;"
 		"movl $1,(ALT);"
+		"movl $0,(ialt);"
 		"jmp END;"
 		"SHIFT0:;"
 		"movl $0, (SHIFT);"
@@ -96,10 +96,11 @@ int process_scancode(int scancode, char *buffer)
 		"jmp END;"
 		"ALTL0:;"
 		"movl $0,(ALT);"
+		"jmp ATLL2;"
 		"END:;"
 		
 		"cmpl $128,%%edx;"
-		"jg EN;"
+		"jg EN1;"
 		"cmpl $1, (SHIFT);"
 		"je VELIKA_SLOVAL;"
 		"cld;"
@@ -136,7 +137,8 @@ int process_scancode(int scancode, char *buffer)
 		"addl $65,%%esi;"
 		"incl %%eax;"
 		"loop CTRLL;"
-		"jne EN;"
+		"cmpl 0,%%ecx;"
+		"je EN1;"
 		"NASO:;"
 		
 		"addl $1,%%esi;"
@@ -148,7 +150,7 @@ int process_scancode(int scancode, char *buffer)
 		"movl %%esi,%%edx;"
 		"N:;"
 		"lodsb;"
-		"cmpb $0,%%al;"
+		"cmpb $10,%%al;"
 		"je POSLE;"
 		//"repe movsb;"
 		"incl %%ebx;"
@@ -179,18 +181,35 @@ int process_scancode(int scancode, char *buffer)
 		"movl (%%eax),%0;"
 		"rep movsb;"
 		*/
-		"EN:;"
 		
-
+		"ALTLL:;"
+		//"movl $0,(ialt);"
+		"imul $10,(ialt),%%eax;"
+		"subl $48,(%%edi);"
+		"addl (%%edi),%%eax;"
+		"movl %%eax,ialt;"
+		"jmp EN1;"
+		
+		"ATLL2:;"
+		"movl (ialt), %%eax;"
+		"stosb;"
+		"movl $1 ,%%ebx;"
+		//"movb (ialt),%%edi;"
+		"movl $0,(ialt);"
+		"jmp EN1;"
+		
+		"EN:;"
+		"cmpl $1,(ALT);"
+		"je ALTLL;"
+		"EN1:;"
 		//"KK:;"
 		:"=b"(result)
 		:"d"(scancode),"D" (buffer)
-
 	
 	);
 	/*vardump(ALT);
 	vardump(CTRL);
-	vardump(SHIFT);*/
-
+	vardump(SHIFT);
+	vardump(ialt);*/
 	return result;
 }
