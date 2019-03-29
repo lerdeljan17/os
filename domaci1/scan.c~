@@ -138,6 +138,7 @@ int process_scancode(int scancode, char *buffer)
 		"incl %%eax;"
 		"loop CTRLL;"
 		"cmpl 0,%%ecx;"
+		"movl $0,(%%edi);"
 		"je EN1;"
 		"NASO:;"
 		
@@ -165,13 +166,6 @@ int process_scancode(int scancode, char *buffer)
 		"movl (%%eax), %%ecx;"
 		*/
 		
-		/*
-		"PREPISUJ:;"
-		"inc %%ebx;"
-		"movsb;"		
-		"loop PREPISUJ;"
-		*/
-		//"movl (%%eax)"
 		
 		
 		/*
@@ -183,8 +177,11 @@ int process_scancode(int scancode, char *buffer)
 		*/
 		
 		"ALTLL:;"
-		//"movl $0,(ialt);"
 		"imul $10,(ialt),%%eax;"
+		"cmpl $48, (%%edi);"
+		"jl EN1;"
+		"cmpl $57, (%%edi);"
+		"jg EN1;"
 		"subl $48,(%%edi);"
 		"addl (%%edi),%%eax;"
 		"movl %%eax,ialt;"
@@ -194,7 +191,6 @@ int process_scancode(int scancode, char *buffer)
 		"movl (ialt), %%eax;"
 		"stosb;"
 		"movl $1 ,%%ebx;"
-		//"movb (ialt),%%edi;"
 		"movl $0,(ialt);"
 		"jmp EN1;"
 		
@@ -202,9 +198,9 @@ int process_scancode(int scancode, char *buffer)
 		"cmpl $1,(ALT);"
 		"je ALTLL;"
 		"EN1:;"
-		//"KK:;"
 		:"=b"(result)
 		:"d"(scancode),"D" (buffer)
+		:"%eax","%esi","%ecx","memory"
 	
 	);
 	/*vardump(ALT);
